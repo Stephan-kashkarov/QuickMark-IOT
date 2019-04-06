@@ -25,7 +25,8 @@
  * SPI MOSI    MOSI         GPIO13
  * SPI MISO    MISO         GPIO12
  * SPI SCK     SCK          GPIO14
-
+ *
+ *
  */
 
 // Lib includes
@@ -35,6 +36,7 @@
 
 // namespaces
 using namespace std;
+using namespace MFRC522;
 
 //////////////////////////////////////////////////////////////////////////
 // WiFi based functions
@@ -93,11 +95,27 @@ bool send_rfid(Uid id)
 //////////////////////////////////////////////////////////////////////////
 Uid get_uid()
 {
-	return rfid.
+	return rfid.uid
+}
+
+unsigned long serialise_uid(Uid id)
+{
+	unsigned long total = 0;
+	for (size_t i = 0; i < id.size; ++i){
+		total += id.uidByte[i];
+	}
+	return total;
+}
+
+void print_uid(Uid id)
+{
+
 }
 
 // Variables
-MFRC522 rfid();
+MFRC522 rfid(SS_PIN, RST_PIN);
+Uid new_uid;
+Uid prev_uid;
 
 //////////////////////////////////////////////////////////////////////////
 // Main Execution Loop
