@@ -1,5 +1,5 @@
 /*
- *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * QuickMark IOT - ESP8266
  *
  *  By             Stephan Kashkarov
@@ -25,7 +25,7 @@
  * SPI MOSI    MOSI         GPIO13
  * SPI MISO    MISO         GPIO12
  * SPI SCK     SCK          GPIO14
- *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *
  */
 
@@ -34,9 +34,18 @@
 #include <SPI.h>
 #include <MFRC522.h>
 
+
+// Static variables
+#define SS_PIN 10
+#define RST_PIN 9
+
 // namespaces
 using namespace std;
-using namespace MFRC522;
+
+// Variables
+MFRC522 rfid(SS_PIN, RST_PIN);
+MFRC522::Uid new_uid;
+MFRC522::Uid prev_uid;
 
 //////////////////////////////////////////////////////////////////////////
 // WiFi based functions
@@ -76,7 +85,7 @@ bool connect_server(string url)
 	return false;
 }
 
-bool send_rfid(Uid id)
+bool send_rfid(MFRC522::Uid id)
 /*
  * send_rfid
  * 
@@ -93,29 +102,40 @@ bool send_rfid(Uid id)
 //////////////////////////////////////////////////////////////////////////
 // RFID based functions
 //////////////////////////////////////////////////////////////////////////
-Uid get_uid()
+MFRC522::Uid get_uid()
 {
-	return rfid.uid
+	return rfid.uid;
 }
 
-unsigned long serialise_uid(Uid id)
+unsigned long serialise_uid(MFRC522::Uid id)
 {
 	unsigned long total = 0;
-	for (size_t i = 0; i < id.size; ++i){
+	for (size_t i = 0; i < id.size; ++i)
+	{
 		total += id.uidByte[i];
 	}
 	return total;
 }
 
-void print_uid(Uid id)
+void print_uid(MFRC522::Uid id)
 {
-
+	for (size_t i = 0; i < id.size; ++i)
+	{
+		Serial.print(id.uidByte[i] < 0x10 ? " 0" : " ");
+		Serial.print(id.uidByte[i], HEX);
+	}
 }
 
-// Variables
-MFRC522 rfid(SS_PIN, RST_PIN);
-Uid new_uid;
-Uid prev_uid;
+bool check_card() {
+	if (!rfid.PICC_IsNewCardPresent())
+		return false;
+
+	// Verify if the NUID has been readed
+	if (!rfid.PICC_ReadCardSerial())
+		return false;
+	
+	return true;
+}
 
 //////////////////////////////////////////////////////////////////////////
 // Main Execution Loop
@@ -123,10 +143,32 @@ Uid prev_uid;
 
 void setup()
 {
-	PCD_Init();
+	Serial.begin(9600);
+	SPI.begin(); // Init SPI bus
+	rfid.PCD_Init(); // Init MFRC522
 }
 
 void loop()
 {
-	// put your main code here, to run repeatedly:
+	if (!check_card()) // checks for card
+	{
+		return;
+	}
+
+	new_uid = get_uid(); // gets uid
+
+	if (new_uid != prev_uid) // check new
+	{
+		return;
+	}
+
+	// slide over object
+	memcpy(new_uid, prev_uid, sizeof(prev_uid));
+
+	// Prints off uids
+	Serial.println("###############");
+	print_uid(new_uid);
+	Serial.println("---------------");
+	print_uid(prev_uid);
+	Serial.println("###############");
 }
