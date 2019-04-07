@@ -137,11 +137,27 @@ bool check_card() {
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Main Execution Loop
-//////////////////////////////////////////////////////////////////////////
+bool check_duplicate(MFRC522::Uid a, MFRC522::Uid b)
+{
+	if (a.size != b.size)
+	{
+		return false;
+	}
+	for (size_t i = 0; i < a.size; ++i)
+	{
+		if (a.uidByte[i] != b.uidByte[i])
+		{
+			return false;
+		} 
+	}
+	return true;
+}
 
-void setup()
+	//////////////////////////////////////////////////////////////////////////
+	// Main Execution Loop
+	//////////////////////////////////////////////////////////////////////////
+
+	void setup()
 {
 	Serial.begin(9600);
 	SPI.begin(); // Init SPI bus
@@ -157,13 +173,13 @@ void loop()
 
 	new_uid = get_uid(); // gets uid
 
-	if (new_uid != prev_uid) // check new
+	if (!check_duplicate(prev_uid, new_uid)) // check new
 	{
 		return;
 	}
 
 	// slide over object
-	memcpy(new_uid, prev_uid, sizeof(prev_uid));
+	memcpy(&new_uid, &prev_uid, sizeof(prev_uid));
 
 	// Prints off uids
 	Serial.println("###############");
